@@ -1,0 +1,10 @@
+{
+	"name":	"Italie",
+	"capital":	"Rome",
+	"population":	59550000,
+	"area":	301340,
+	"currency":	"Euro",
+	"continent":	"Europe",
+	"image":	"data/images/italie.png",
+	"description":	"L'Italie est connue pour sa riche histoire, sa cuisine et ses monuments célèbres. Elle est voisine de <a href=\"FRA\">la France</a>, de la <a href=\"CHE\">Suisse</a> et de l'<a href=\"AUT\">Autriche</a>, et partage une frontière avec la <a href=\"SVN\">Slovénie</a>."
+}

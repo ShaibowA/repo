@@ -1,0 +1,10 @@
+{
+  "name": "Canada",
+  "capital": "Ottawa",
+  "population": 38250000,
+  "area": 9984670,
+  "currency": "Dollar canadien",
+  "continent": "Amérique",
+  "image": "data/images/default.png",
+  "description": "Le Canada partage sa frontière sud avec <a href=\"USA\">les États-Unis</a> et est le deuxième plus grand pays du monde en superficie. Il a également des liens historiques avec <a href=\"FRA\">la France</a> et <a href=\"GBR\">le Royaume-Uni</a>."
+}

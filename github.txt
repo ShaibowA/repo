@@ -1,0 +1,10 @@
+git remote add origin https://github.com/yass2002-M/countypedia.git
+
+
+git init
+git add .
+git commit -m "3eme commit - crud complet pays - menu interactif console - verification rapide des erreurs - recherche par nom ou code de pays"
+
+
+git branch -M main
+git push 

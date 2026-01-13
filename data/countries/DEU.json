@@ -1,0 +1,15 @@
+{
+	"name":	"Allemagne",
+	"capital":	"Berlin",
+	"population":	83130000,
+	"area":	357022,
+	"currency":	"Euro",
+	"continent":	"Europe",
+	"image":	"data/images/allemagne.png",
+	"description":	"L'Allemagne partage ses frontières avec <a href=\"FRA\">la France</a>, la <a href=\"BEL\">Belgique</a>, les <a href=\"NLD\">Pays-Bas</a>, le <a href=\"DNK\">Danemark</a>, la <a href=\"POL\">Pologne</a>, la <a href=\"CZE\">République Tchèque</a>, l'<a href=\"AUT\">Autriche</a> et la <a href=\"CHE\">Suisse</a>.",
+
+	"borders": ["FRA", "BEL", "LUX", "CHE", "AUT", "CZE", "POL", "DNK", "NLD"],
+    "government": "République fédérale",
+    "head_of_state": "Frank-Walter Steinmeier",
+    "official_language": "Allemand"
+}

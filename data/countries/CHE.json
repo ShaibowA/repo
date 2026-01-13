@@ -1,0 +1,10 @@
+{
+	"name":	"Suisse",
+	"capital":	"Berne",
+	"population":	8700000,
+	"area":	41284,
+	"currency":	"Franc suisse",
+	"continent":	"Europe",
+	"image":	"data/images/suisse.png",
+	"description":	"La Suisse est entourée par <a href=\"FRA\">la France</a> à l'ouest, <a href=\"DEU\">l'Allemagne</a> au nord, l'<a href=\"AUT\">Autriche</a> et le <a href=\"LIE\">Liechtenstein</a> à l'est, et l'<a href=\"ITA\">Italie</a> au sud. Elle est célèbre pour montagnes, banques et chocolat."
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Espagne",
+  "capital": "Madrid",
+  "population": 47350000,
+  "area": 505990,
+  "currency": "Euro",
+  "continent": "Europe",
+  "image": "data/images/default.png",
+  "description": "L'Espagne partage ses frontières avec <a href=\"FRA\">la France</a>. Elle est également proche du <a href=\"MAR\">Maroc</a> par le détroit de Gibraltar.",
+
+  "borders": ["FRA", "AND", "PRT"],
+  "government": "Monarchie constitutionnelle",
+  "head_of_state": "Felipe VI",
+  "official_language": "Espagnol"
+}

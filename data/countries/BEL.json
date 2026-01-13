@@ -1,0 +1,10 @@
+{
+  "name": "Belgique",
+  "capital": "Bruxelles",
+  "population": 11500000,
+  "area": 30528,
+  "currency": "Euro",
+  "continent": "Europe",
+  "image": "data/images/belgium.png",
+  "description": "La Belgique est voisine de <a href=\"FRA\">la France</a>, des <a href=\"NLD\">Pays-Bas</a>, de <a href=\"DEU\">l'Allemagne</a> et du <a href=\"LUX\">Luxembourg</a>. C'est le siège de l'Union européenne et de l'OTAN."
+}

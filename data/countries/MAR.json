@@ -1,0 +1,10 @@
+{
+	"name":	"Maroc",
+	"capital":	"Rabat",
+	"population":	37000000,
+	"area":	710850,
+	"currency":	"Dirham",
+	"continent":	"Afrique",
+	"image":	"data/images/maroc.png",
+	"description":	"Le Maroc est séparé de <a href=\"ES\">l'Espagne</a> par le détroit de Gibraltar. Il entretient des relations importantes avec <a href=\"FRA\">la France</a>."
+}

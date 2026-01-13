@@ -1,0 +1,15 @@
+{
+  "name": "France",
+  "capital": "Paris",
+  "population": 67750000,
+  "area": 551695,
+  "currency": "Euro (EUR)",
+  "continent": "Europe",
+  "image": "data/images/france.png",
+  "description": "description: La France, officiellement la République française, est un pays souverain transcontinental dont le territoire métropolitain s'étend en Europe de l'Ouest... <a href=\"ESP\">L'Espagne</a> est son voisin au sud, tandis que <a href=\"DEU\">l'Allemagne</a> borde sa frontière nord-est. Sa capitale <a href=\"PARIS\">Paris</a> est célèbre pour la Tour Eiffel et le Louvre.",
+  
+  "borders": ["BEL", "DEU", "CHE", "ITA", "ESP", "LUX", "AND", "MCO"],
+  "government": "République semi-présidentielle",
+  "head_of_state": "Emmanuel Macron",
+  "official_language": "Français"
+}

@@ -1,0 +1,44 @@
+{
+  "countries": [
+    {
+      "code": "ESP",
+      "name": "Espagne",
+      "file": "data/countries/ESP.json"
+    },
+    {
+      "code": "ITA",
+      "name": "Italie",
+      "file": "data/countries/ITA.json"
+    },
+    {
+      "code": "MAR",
+      "name": "Maroc",
+      "file": "data/countries/MAR.json"
+    },
+    {
+      "code": "FRA",
+      "name": "France",
+      "file": "data/countries/FRA.json"
+    },
+    {
+      "code": "BEL",
+      "name": "Belgique",
+      "file": "data/countries/BEL.json"
+    },
+    {
+      "code": "DEU",
+      "name": "Allemagne",
+      "file": "data/countries/DEU.json"
+    },
+    {
+      "code": "CHE",
+      "name": "Suisse",
+      "file": "data/countries/CHE.json"
+    },
+    {
+      "code": "CAN",
+      "name": "Canada",
+      "file": "data/countries/CAN.json"
+    }
+  ]
+}
