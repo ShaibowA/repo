@@ -1,9 +1,0 @@
-{
-  "name": "Paris",
-  "country": "FRA",
-  "population": 2148000,
-  "area": 105.4,
-  "description": "Paris est la capitale de la France...",
-  "landmarks": ["Tour Eiffel", "Louvre", "Arc de Triomphe"],
-  "images": ["paris1.jpg", "paris2.jpg"]
-}

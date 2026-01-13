@@ -1,395 +1,284 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../lib/cJSON/cJSON.h"
 #include "database.h"
-#include "cJSON.h"
 
-// Variables globales pour l'index
-static CountryIndex *country_index = NULL;
+static CountryIndex *index_list = NULL;
 static int index_count = 0;
-static int index_capacity = 0;
 
-int load_countries_index(const char *filename) {
+static char *read_file(const char *filename) {
     FILE *file = fopen(filename, "r");
-    if (!file) {
-        printf("❌ Impossible d'ouvrir %s\n", filename);
-        return -1;
-    }
+    if (!file) return NULL;
 
     fseek(file, 0, SEEK_END);
-    long length = ftell(file);
+    long size = ftell(file);
     fseek(file, 0, SEEK_SET);
 
-    char *buffer = malloc(length + 1);
-    if (!buffer) {
-        fclose(file);
-        return -1;
-    }
+    char *buffer = malloc(size + 1);
+    if (!buffer) { fclose(file); return NULL; }
 
-    fread(buffer, 1, length, file);
-    buffer[length] = '\0';
+    fread(buffer, 1, size, file);
+    buffer[size] = '\0';
     fclose(file);
+    return buffer;
+}
 
-    cJSON *json = cJSON_Parse(buffer);
-    if (!json) {
-        free(buffer);
-        return -1;
-    }
+/* ================================
+   CHARGER L’INDEX DES PAYS
+   ================================ */
+int load_countries_index(const char *filename) {
+    char *json_data = read_file(filename);
+    if (!json_data) return -1;
 
-    // Libérer l'ancien index si existe
-    if (country_index) {
-        free(country_index);
-    }
+    cJSON *root = cJSON_Parse(json_data);
+    free(json_data);
+    if (!root) return -1;
 
-    cJSON *countries = cJSON_GetObjectItem(json, "countries");
-    if (!cJSON_IsArray(countries)) {
-        cJSON_Delete(json);
-        free(buffer);
-        return -1;
-    }
+    cJSON *countries = cJSON_GetObjectItem(root, "countries");
+    if (!cJSON_IsArray(countries)) { cJSON_Delete(root); return -1; }
 
     index_count = cJSON_GetArraySize(countries);
-    index_capacity = index_count;
-    country_index = malloc(index_capacity * sizeof(CountryIndex));
+    index_list = malloc(sizeof(CountryIndex) * index_count);
+    if (!index_list) { cJSON_Delete(root); return -1; }
 
     for (int i = 0; i < index_count; i++) {
         cJSON *item = cJSON_GetArrayItem(countries, i);
-        cJSON *code = cJSON_GetObjectItem(item, "code");
-        cJSON *name = cJSON_GetObjectItem(item, "name");
-        cJSON *file = cJSON_GetObjectItem(item, "file");
 
-        if (code && name && file) {
-            strncpy(country_index[i].code, code->valuestring, sizeof(country_index[i].code)-1);
-            strncpy(country_index[i].name, name->valuestring, sizeof(country_index[i].name)-1);
-            strncpy(country_index[i].file, file->valuestring, sizeof(country_index[i].file)-1);
-        }
+        strncpy(index_list[i].code,
+                cJSON_GetObjectItem(item, "code")->valuestring,
+                sizeof(index_list[i].code)-1);
+        index_list[i].code[sizeof(index_list[i].code)-1] = '\0';
+
+        strncpy(index_list[i].name,
+                cJSON_GetObjectItem(item, "name")->valuestring,
+                sizeof(index_list[i].name)-1);
+        index_list[i].name[sizeof(index_list[i].name)-1] = '\0';
+
+        strncpy(index_list[i].file,
+                cJSON_GetObjectItem(item, "file")->valuestring,
+                sizeof(index_list[i].file)-1);
+        index_list[i].file[sizeof(index_list[i].file)-1] = '\0';
     }
 
-    cJSON_Delete(json);
-    free(buffer);
-    
-    printf("✅ Index chargé: %d pays\n", index_count);
+    cJSON_Delete(root);
     return 0;
 }
 
-int get_index_count(void) {
-    return index_count;
-}
+/* ================================
+   ACCÈS À L’INDEX
+   ================================ */
+int get_index_count(void) { return index_count; }
 
 const CountryIndex *get_country_index(int index) {
-    if (index < 0 || index >= index_count) {
-        return NULL;
-    }
-    return &country_index[index];
+    if (index < 0 || index >= index_count) return NULL;
+    return &index_list[index];
 }
 
-const CountryIndex* find_country_by_code(const char *code) {
-    if (!code || !country_index) return NULL;
-    
-    for (int i = 0; i < index_count; i++) {
-        if (strcmp(country_index[i].code, code) == 0) {
-            return &country_index[i];
-        }
-    }
-    return NULL;
-}
-
+/* ================================
+   CHARGER UN PAYS (JSON PAR PAYS)
+   ================================ */
 int load_country_from_file(const char *filename, Country *country) {
-    FILE *file = fopen(filename, "r");
-    if (!file) {
-        printf("❌ Impossible d'ouvrir %s\n", filename);
-        return -1;
-    }
+    if (!country) return -1;
 
-    fseek(file, 0, SEEK_END);
-    long length = ftell(file);
-    fseek(file, 0, SEEK_SET);
+    char *json_data = read_file(filename);
+    if (!json_data) return -1;
 
-    char *buffer = malloc(length + 1);
-    if (!buffer) {
-        fclose(file);
-        return -1;
-    }
+    cJSON *root = cJSON_Parse(json_data);
+    free(json_data);
+    if (!root) return -1;
 
-    fread(buffer, 1, length, file);
-    fclose(file);
-    buffer[length] = '\0';
+    #define COPY_STR(field, key, size)                     \
+        do {                                               \
+            cJSON *it = cJSON_GetObjectItem(root, key);    \
+            if (cJSON_IsString(it)) {                      \
+                strncpy(field, it->valuestring, size-1);  \
+                field[size-1]='\0';                        \
+            } else { field[0]='\0'; }                     \
+        } while(0)
 
-    cJSON *json = cJSON_Parse(buffer);
-    if (!json) {
-        free(buffer);
-        return -1;
-    }
+    COPY_STR(country->name, "name", sizeof(country->name));
+    COPY_STR(country->capital, "capital", sizeof(country->capital));
+    COPY_STR(country->currency,"currency",sizeof(country->currency));
+    COPY_STR(country->continent,"continent",sizeof(country->continent));
+    COPY_STR(country->image,"image",sizeof(country->image));
+    COPY_STR(country->description,"description",sizeof(country->description));
 
-    // Charger les champs de base
-    cJSON *name = cJSON_GetObjectItem(json, "name");
-    cJSON *capital = cJSON_GetObjectItem(json, "capital");
-    cJSON *population = cJSON_GetObjectItem(json, "population");
-    cJSON *area = cJSON_GetObjectItem(json, "area");
-    cJSON *currency = cJSON_GetObjectItem(json, "currency");
-    cJSON *continent = cJSON_GetObjectItem(json, "continent");
-    cJSON *image = cJSON_GetObjectItem(json, "image");
-    cJSON *description = cJSON_GetObjectItem(json, "description");
+    cJSON *pop = cJSON_GetObjectItem(root, "population");
+    cJSON *area = cJSON_GetObjectItem(root, "area");
 
-    if (name) strncpy(country->name, name->valuestring, sizeof(country->name)-1);
-    if (capital) strncpy(country->capital, capital->valuestring, sizeof(country->capital)-1);
-    if (population) country->population = population->valueint;
-    if (area) country->area = area->valuedouble;
-    if (currency) strncpy(country->currency, currency->valuestring, sizeof(country->currency)-1);
-    if (continent) strncpy(country->continent, continent->valuestring, sizeof(country->continent)-1);
-    if (image) strncpy(country->image, image->valuestring, sizeof(country->image)-1);
-    if (description) strncpy(country->description, description->valuestring, sizeof(country->description)-1);
+    country->population = cJSON_IsNumber(pop)?pop->valuedouble:0;
+    country->area       = cJSON_IsNumber(area)?area->valuedouble:0;
 
-    // ============ CHARGEMENT DES NOUVEAUX CHAMPS ============
-    
-    // 1. Pays frontaliers
-    country->border_count = 0;
-    cJSON *borders = cJSON_GetObjectItem(json, "borders");
-    if (cJSON_IsArray(borders)) {
-        int i = 0;
-        cJSON *border_item = NULL;
-        
-        cJSON_ArrayForEach(border_item, borders) {
-            if (i < 10 && cJSON_IsString(border_item)) {
-                strncpy(country->borders[i], border_item->valuestring, 3);
-                country->borders[i][3] = '\0';
-                i++;
-            }
-        }
-        country->border_count = i;
-    }
-    
-    // 2. Gouvernement
-    cJSON *government = cJSON_GetObjectItem(json, "government");
-    if (cJSON_IsString(government)) {
-        strncpy(country->government, government->valuestring, sizeof(country->government)-1);
-    } else {
-        strcpy(country->government, "Non spécifié");
-    }
-    
-    // 3. Chef d'État
-    cJSON *head_of_state = cJSON_GetObjectItem(json, "head_of_state");
-    if (cJSON_IsString(head_of_state)) {
-        strncpy(country->head_of_state, head_of_state->valuestring, sizeof(country->head_of_state)-1);
-    } else {
-        strcpy(country->head_of_state, "Non spécifié");
-    }
-    
-    // 4. Langue officielle
-    cJSON *official_language = cJSON_GetObjectItem(json, "official_language");
-    if (cJSON_IsString(official_language)) {
-        strncpy(country->official_language, official_language->valuestring, sizeof(country->official_language)-1);
-    } else {
-        strcpy(country->official_language, "Non spécifié");
-    }
-    // ========================================================
+    if (strlen(country->image)==0)
+        strcpy(country->image,"data/images/default.png");
 
-    cJSON_Delete(json);
-    free(buffer);
-
-    printf("✅ Pays chargé: %s (%d frontières)\n", country->name, country->border_count);
+    cJSON_Delete(root);
     return 0;
 }
 
-void print_country(const Country *country) {
-    printf("=== %s ===\n", country->name);
-    printf("Capitale: %s\n", country->capital);
-    printf("Population: %ld\n", country->population);
-    printf("Superficie: %.0f km²\n", country->area);
-    printf("Devise: %s\n", country->currency);
-    printf("Continent: %s\n", country->continent);
-    printf("Image: %s\n", country->image);
-    printf("Description: %s\n", country->description);
-    
-    // Afficher les nouveaux champs
-    printf("Gouvernement: %s\n", country->government);
-    printf("Chef d'État: %s\n", country->head_of_state);
-    printf("Langue: %s\n", country->official_language);
-    
-    if (country->border_count > 0) {
-        printf("Pays frontaliers (%d): ", country->border_count);
-        for (int i = 0; i < country->border_count; i++) {
-            printf("%s ", country->borders[i]);
-        }
-        printf("\n");
-    }
+/* ================================
+   DEBUG CONSOLE
+   ================================ */
+void print_country(const Country *c) {
+    if (!c) return;
+    printf("\n==============================\n");
+    printf("%s\n", c->name);
+    printf("==============================\n");
+    printf("Capitale   : %s\n", c->capital);
+    printf("Population : %ld\n", c->population);
+    printf("Superficie : %ld km²\n", c->area);
+    printf("Devise     : %s\n", c->currency);
+    printf("Continent  : %s\n", c->continent);
+    printf("\n%s\n", c->description);
 }
 
-const CountryIndex* search_country_in_index(const char *name) {
-    if (!name || !country_index) return NULL;
-    
+/* ================================
+   RECHERCHE DANS L’INDEX
+   ================================ */
+const CountryIndex* search_country_in_index(const char *query) {
+    if (!query) return NULL;
+
     for (int i = 0; i < index_count; i++) {
-        if (strcasecmp(country_index[i].name, name) == 0) {
-            return &country_index[i];
+        if (strcasecmp(index_list[i].name, query) == 0 || 
+            strcasecmp(index_list[i].code, query) == 0) {
+            return &index_list[i];
         }
     }
     return NULL;
 }
 
-// CRUD functions
-int add_country_index(Country c, const char *code) {
-    if (!code || strlen(code) != 3) return -1;
-    
-    // Vérifier si le code existe déjà
-    for (int i = 0; i < index_count; i++) {
-        if (strcmp(country_index[i].code, code) == 0) {
-            return -1;
-        }
-    }
-    
-    // Agrandir le tableau si nécessaire
-    if (index_count >= index_capacity) {
-        index_capacity = index_capacity == 0 ? 10 : index_capacity * 2;
-        country_index = realloc(country_index, index_capacity * sizeof(CountryIndex));
-    }
-    
-    // Ajouter le nouveau pays
-    strcpy(country_index[index_count].code, code);
-    strcpy(country_index[index_count].name, c.name);
-    snprintf(country_index[index_count].file, sizeof(country_index[index_count].file),
-             "data/countries/%s.json", code);
-    
-    index_count++;
-    
-    // Sauvegarder le pays dans son fichier
-    char filename[256];
-    snprintf(filename, sizeof(filename), "data/countries/%s.json", code);
-    save_country_to_file(filename, &c);
-    
-    // Sauvegarder l'index
-    save_index("data/index.json");
-    
-    return 0;
-}
 
-int update_country_index(const char *code, Country c) {
-    if (!code) return -1;
-    
-    // Trouver le pays
-    for (int i = 0; i < index_count; i++) {
-        if (strcmp(country_index[i].code, code) == 0) {
-            // Mettre à jour le nom si changé
-            strcpy(country_index[i].name, c.name);
-            
-            // Sauvegarder dans le fichier
-            save_country_to_file(country_index[i].file, &c);
-            
-            // Sauvegarder l'index
-            save_index("data/index.json");
-            
-            return 0;
-        }
-    }
-    
-    return -1;
-}
+/* ================================
+   SAUVEGARDE JSON
+   ================================ */
+int save_country_to_file(const char *filename, Country *c) {
+    if(!c) return -1;
 
-int remove_country_index(const char *code) {
-    if (!code) return -1;
-    
-    // Trouver l'index
-    int found_index = -1;
-    for (int i = 0; i < index_count; i++) {
-        if (strcmp(country_index[i].code, code) == 0) {
-            found_index = i;
-            break;
-        }
-    }
-    
-    if (found_index == -1) return -1;
-    
-    // Supprimer le fichier du pays
-    remove(country_index[found_index].file);
-    
-    // Décaler les éléments
-    for (int i = found_index; i < index_count - 1; i++) {
-        country_index[i] = country_index[i + 1];
-    }
-    
-    index_count--;
-    
-    // Sauvegarder l'index
-    save_index("data/index.json");
-    
+    cJSON *root=cJSON_CreateObject();
+    cJSON_AddStringToObject(root,"name",c->name);
+    cJSON_AddStringToObject(root,"capital",c->capital);
+    cJSON_AddNumberToObject(root,"population",c->population);
+    cJSON_AddNumberToObject(root,"area",c->area);
+    cJSON_AddStringToObject(root,"currency",c->currency);
+    cJSON_AddStringToObject(root,"continent",c->continent);
+    cJSON_AddStringToObject(root,"image",c->image);
+    cJSON_AddStringToObject(root,"description",c->description);
+
+    char *json_str=cJSON_Print(root);
+    if(!json_str){ cJSON_Delete(root); return -1; }
+
+    FILE *f=fopen(filename,"w");
+    if(!f){ free(json_str); cJSON_Delete(root); return -1; }
+
+    fprintf(f,"%s",json_str);
+    fclose(f);
+    free(json_str);
+    cJSON_Delete(root);
     return 0;
 }
 
 int save_index(const char *filename) {
-    cJSON *root = cJSON_CreateObject();
-    cJSON *countries_array = cJSON_CreateArray();
-    
-    for (int i = 0; i < index_count; i++) {
-        cJSON *country_obj = cJSON_CreateObject();
-        cJSON_AddStringToObject(country_obj, "code", country_index[i].code);
-        cJSON_AddStringToObject(country_obj, "name", country_index[i].name);
-        cJSON_AddStringToObject(country_obj, "file", country_index[i].file);
-        cJSON_AddItemToArray(countries_array, country_obj);
+    cJSON *root=cJSON_CreateObject();
+    cJSON *array=cJSON_CreateArray();
+
+    for(int i=0;i<index_count;i++){
+        cJSON *item=cJSON_CreateObject();
+        cJSON_AddStringToObject(item,"code",index_list[i].code);
+        cJSON_AddStringToObject(item,"name",index_list[i].name);
+        cJSON_AddStringToObject(item,"file",index_list[i].file);
+        cJSON_AddItemToArray(array,item);
     }
-    
-    cJSON_AddItemToObject(root, "countries", countries_array);
-    
-    char *json_str = cJSON_Print(root);
-    FILE *file = fopen(filename, "w");
-    if (file) {
-        fputs(json_str, file);
-        fclose(file);
-    }
-    
+
+    cJSON_AddItemToObject(root,"countries",array);
+
+    FILE *f=fopen(filename,"w");
+    if(!f) { cJSON_Delete(root); return -1; }
+
+    char *json_str=cJSON_Print(root);
+    fprintf(f,"%s",json_str);
+    fclose(f);
     free(json_str);
     cJSON_Delete(root);
-    
     return 0;
 }
 
-int save_country_to_file(const char *filename, Country *c) {
-    cJSON *root = cJSON_CreateObject();
-    
-    cJSON_AddStringToObject(root, "name", c->name);
-    cJSON_AddStringToObject(root, "capital", c->capital);
-    cJSON_AddNumberToObject(root, "population", c->population);
-    cJSON_AddNumberToObject(root, "area", c->area);
-    cJSON_AddStringToObject(root, "currency", c->currency);
-    cJSON_AddStringToObject(root, "continent", c->continent);
-    cJSON_AddStringToObject(root, "image", c->image);
-    cJSON_AddStringToObject(root, "description", c->description);
-    
-    // ============ SAUVEGARDER LES NOUVEAUX CHAMPS ============
-    
-    // 1. Pays frontaliers
-    cJSON *borders_array = cJSON_CreateArray();
-    for (int i = 0; i < c->border_count; i++) {
-        cJSON_AddItemToArray(borders_array, cJSON_CreateString(c->borders[i]));
+/* ================================
+   CRUD PAYS AVEC VALIDATION
+   ================================ */
+
+int add_country_index(Country c, const char *code){
+    if(strlen(c.name)==0 || strlen(code)==0){
+        fprintf(stderr,"Erreur : nom ou code vide\n");
+        return -1;
     }
-    cJSON_AddItemToObject(root, "borders", borders_array);
-    
-    // 2. Gouvernement
-    cJSON_AddStringToObject(root, "government", c->government);
-    
-    // 3. Chef d'État
-    cJSON_AddStringToObject(root, "head_of_state", c->head_of_state);
-    
-    // 4. Langue officielle
-    cJSON_AddStringToObject(root, "official_language", c->official_language);
-    // ========================================================
-    
-    char *json_str = cJSON_Print(root);
-    FILE *file = fopen(filename, "w");
-    if (file) {
-        fputs(json_str, file);
-        fclose(file);
+    if(c.population<=0){ fprintf(stderr,"Erreur : population > 0\n"); return -1;}
+    if(c.area<=0){ fprintf(stderr,"Erreur : superficie > 0\n"); return -1;}
+
+    // verifie doublon
+    for(int i=0;i<index_count;i++){
+        if(strcasecmp(index_list[i].name,c.name)==0 ||
+           strcasecmp(index_list[i].code,code)==0){
+            fprintf(stderr,"Erreur : pays deja existant (%s)\n",c.name);
+            return -1;
+        }
     }
-    
-    free(json_str);
-    cJSON_Delete(root);
-    
-    return 0;
+
+    char filename[256];
+    sprintf(filename,"data/countries/%s.json",code);
+
+    if(save_country_to_file(filename,&c)!=0){
+        fprintf(stderr,"Erreur : impossible de creer le fichier JSON\n");
+        return -1;
+    }
+
+    CountryIndex *tmp=realloc(index_list,sizeof(CountryIndex)*(index_count+1));
+    if(!tmp){ fprintf(stderr,"Erreur allocation memoire\n"); return -1;}
+    index_list=tmp;
+
+    strncpy(index_list[index_count].name,c.name,sizeof(index_list[index_count].name)-1);
+    strncpy(index_list[index_count].code,code,sizeof(index_list[index_count].code)-1);
+    strncpy(index_list[index_count].file,filename,sizeof(index_list[index_count].file)-1);
+    index_count++;
+
+    return save_index("data/index.json");
 }
 
-void free_database(void) {
-    if (country_index) {
-        free(country_index);
-        country_index = NULL;
-    }
-    index_count = 0;
-    index_capacity = 0;
+int update_country_index(const char *code, Country updated){
+    if(updated.population<=0){ fprintf(stderr,"Erreur : population > 0\n"); return -1;}
+    if(updated.area<=0){ fprintf(stderr,"Erreur : superficie > 0\n"); return -1;}
+
+    CountryIndex *idx=NULL;
+    for(int i=0;i<index_count;i++)
+        if(strcasecmp(index_list[i].code,code)==0){ idx=&index_list[i]; break;}
+    if(!idx){ fprintf(stderr,"Erreur : code pays introuvable\n"); return -1;}
+
+    return save_country_to_file(idx->file,&updated);
+}
+
+int remove_country_index(const char *code){
+    int index=-1;
+    for(int i=0;i<index_count;i++)
+        if(strcasecmp(index_list[i].code,code)==0){ index=i; break;}
+    if(index==-1){ fprintf(stderr,"Erreur : code pays introuvable\n"); return -1;}
+
+    if(remove(index_list[index].file)!=0)
+        fprintf(stderr,"Attention : fichier JSON non trouve pour suppression\n");
+
+    for(int i=index;i<index_count-1;i++) index_list[i]=index_list[i+1];
+    index_count--;
+    index_list=realloc(index_list,sizeof(CountryIndex)*index_count);
+
+    return save_index("data/index.json");
+}
+
+
+
+/* ================================
+   LIBÉRATION MÉMOIRE
+   ================================ */
+void free_database(void){
+    free(index_list);
+    index_list=NULL;
+    index_count=0;
 }
