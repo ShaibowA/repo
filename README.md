@@ -6,6 +6,7 @@ gcc -o countryp main.c gui.c src/database.c lib/cJSON/cJSON.c src/config.c -Ilib
 // exe
 ./countryp.exe
 
+...
 
 
 
